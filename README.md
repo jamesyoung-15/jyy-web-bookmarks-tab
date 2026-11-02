@@ -1,6 +1,8 @@
-# Work bookmarks start page
+# JYY Web Bookmarks Tab
 
 Turns a Chrome bookmarks export into a static, offline start page (in the style of nightTab) for use as the Chrome homepage on a locked-down work laptop.
+
+![Preview](./assets/20261102_Screenshot_033936.png)
 
 ## Install
 
