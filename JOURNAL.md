@@ -14,3 +14,4 @@ Format: `YYYY-MM-DD  tag  one line`. Append only. Tags: `fail`, `why`, `found`, 
 2026-11-02  why    Cards info uses a separate (i) button beside each link plus a "Details: all" toggle, so a plain click on the link still navigates; nesting a button inside the <a> is invalid HTML
 2026-11-02  fail   CSS `columns` masonry rebalances when a card grows, so opening (i) moved cards between columns; replaced with JS-assigned fixed columns weighted by link count
 2026-11-02  found  notes.toml survives re-export: entries are keyed by URL, --init-notes only appends, removed links become reported orphans (tests/test_build.py::test_notes_survive_reexport)
+2026-11-02  why    references/ and notes.toml are gitignored (internal hostnames); notes have no backup outside this machine
