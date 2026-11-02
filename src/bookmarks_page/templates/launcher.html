@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>__TITLE__</title>
+<style>
+/*__CSS__*/
+/* Layout C: search-first launcher */
+.wrap { max-width: 760px; padding-top: 12vh; }
+.top { flex-direction: column; align-items: stretch; gap: 16px; }
+.top .clock { flex-direction: row; align-items: baseline; gap: 12px; }
+.top .clock-time { font-size: 28px; }
+.top .clock-date { margin: 0; }
+.top .search { flex: none; height: 52px; border-radius: 14px; }
+.top .search input { font-size: 17px; }
+.top .icon-btn { position: absolute; top: 16px; right: 16px; }
+.pinned { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+.chip {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+  padding: 6px 12px 6px 8px; font-weight: 500;
+}
+.chip:hover { border-color: var(--accent); }
+details { border-top: 1px solid var(--border); }
+details:last-of-type { border-bottom: 1px solid var(--border); }
+summary {
+  cursor: pointer; list-style: none; padding: 10px 4px;
+  display: flex; align-items: center; gap: 8px;
+  font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted);
+}
+summary::-webkit-details-marker { display: none; }
+summary::before { content: "\25B8"; font-size: 10px; color: var(--faint); transition: transform 0.1s; }
+details[open] summary::before { transform: rotate(90deg); }
+summary .count { color: var(--faint); font-weight: 400; letter-spacing: 0; }
+.mini { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 2px; padding: 0 0 10px 18px; }
+.mini a { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 6px; }
+.mini a:hover { background: var(--surface-2); }
+.mini span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.results { display: flex; flex-direction: column; gap: 4px; }
+.result {
+  display: flex; gap: 12px; align-items: flex-start;
+  padding: 10px 12px; border-radius: 10px; border: 1px solid transparent;
+}
+.result:hover { background: var(--surface); border-color: var(--border); }
+.result.is-top { background: var(--surface); box-shadow: none; border-color: var(--accent); }
+.result .ico { margin-top: 2px; }
+.result-body { flex: 1; min-width: 0; }
+.result-title { font-weight: 600; font-size: 15px; }
+.result-group { color: var(--faint); font-size: 12px; margin-left: 8px; font-weight: 400; }
+.result-desc { color: var(--muted); margin-top: 2px; }
+.result-meta { margin-top: 4px; display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; }
+.result-host { font-family: var(--mono); font-size: 11px; color: var(--faint); word-break: break-all; }
+.enter { flex: none; align-self: center; visibility: hidden; }
+.result.is-top .enter { visibility: visible; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header id="top"></header>
+  <main id="main"></main>
+  <p class="empty" id="empty" hidden>No matches.</p>
+  <footer id="foot"></footer>
+</div>
+<script>window.BOOKMARKS = /*__DATA__*/;</script>
+<script>
+/*__JS__*/
+</script>
+<script>
+(function () {
+  const { data, icon, esc, search, highlight } = BM;
+  const main = document.getElementById("main");
+  const empty = document.getElementById("empty");
+  const OPEN_KEY = "bm-launcher-open";
+
+  function getOpen() {
+    try { return new Set(JSON.parse(localStorage.getItem(OPEN_KEY) || "[]")); } catch (e) { return new Set(); }
+  }
+  function setOpen(set) {
+    try { localStorage.setItem(OPEN_KEY, JSON.stringify([...set])); } catch (e) {}
+  }
+
+  function anchor(link, cls) {
+    const a = document.createElement("a");
+    a.className = cls + " bm-link";
+    a.href = link.url;
+    a.dataset.id = link.id;
+    a.title = (link.desc ? link.desc + "\n" : "") + link.url;
+    return a;
+  }
+
+  function browse() {
+    const out = [];
+    if (data.pinned.length) {
+      const nav = document.createElement("nav");
+      nav.className = "pinned";
+      nav.setAttribute("aria-label", "Pinned");
+      for (const id of data.pinned) {
+        const l = data.links[id];
+        const a = anchor(l, "chip");
+        a.append(icon(l, 18), l.title);
+        nav.append(a);
+      }
+      out.push(nav);
+    }
+    const open = getOpen();
+    for (const g of data.groups) {
+      const d = document.createElement("details");
+      d.open = open.has(g.name);
+      d.addEventListener("toggle", () => {
+        const s = getOpen();
+        d.open ? s.add(g.name) : s.delete(g.name);
+        setOpen(s);
+      });
+      const sum = document.createElement("summary");
+      sum.innerHTML = esc(g.name) + ' <span class="count">' + g.links.length + "</span>";
+      const list = document.createElement("div");
+      list.className = "mini";
+      for (const id of g.links) {
+        const l = data.links[id];
+        const a = anchor(l, "");
+        const t = document.createElement("span");
+        t.textContent = l.title;
+        a.append(icon(l), t);
+        list.append(a);
+      }
+      d.append(sum, list);
+      out.push(d);
+    }
+    return out;
+  }
+
+  function results(hits, q) {
+    const box = document.createElement("div");
+    box.className = "results";
+    for (const { link: l } of hits) {
+      const a = anchor(l, "result");
+      const body = document.createElement("div");
+      body.className = "result-body";
+      body.innerHTML =
+        '<div class="result-title">' + highlight(l.title, q) +
+        '<span class="result-group">' + esc(l.groups.join(", ")) + "</span></div>" +
+        (l.desc ? '<div class="result-desc">' + highlight(l.desc, q) + "</div>" : "") +
+        '<div class="result-meta">' +
+        l.tags.map((t) => '<span class="tag">' + highlight(t, q) + "</span>").join("") +
+        '<span class="result-host">' + highlight(l.host, q) + "</span></div>";
+      const enter = document.createElement("span");
+      enter.className = "kbd enter";
+      enter.textContent = "Enter";
+      a.append(icon(l, 24), body, enter);
+      box.append(a);
+    }
+    return hits.length ? [box] : [];
+  }
+
+  function render(q) {
+    const hits = q ? search(q) : null;
+    const out = hits ? results(hits, q) : browse();
+    main.replaceChildren(...out);
+    empty.hidden = out.length > 0;
+    return hits ? hits.map((h) => h.link.id) : null;
+  }
+
+  BM.init({ layout: "launcher", render });
+})();
+</script>
+</body>
+</html>

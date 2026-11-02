@@ -1,0 +1,129 @@
+/* Shared tokens and components. Layout-specific CSS lives in each template. */
+:root {
+  --bg: #f4f5f7;
+  --surface: #ffffff;
+  --surface-2: #eceef2;
+  --text: #1b1f27;
+  --muted: #5d6573;
+  --faint: #8a91a0;
+  --border: #dde0e6;
+  --accent: #3b6fe0;
+  --accent-soft: rgba(59, 111, 224, 0.12);
+  --shadow: 0 1px 2px rgba(16, 24, 40, 0.06), 0 1px 3px rgba(16, 24, 40, 0.08);
+  --radius: 10px;
+  --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #12141a;
+    --surface: #1b1e26;
+    --surface-2: #242833;
+    --text: #e6e8ee;
+    --muted: #a0a7b5;
+    --faint: #6f7686;
+    --border: #2c303b;
+    --accent: #7aa2ff;
+    --accent-soft: rgba(122, 162, 255, 0.14);
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #12141a;
+  --surface: #1b1e26;
+  --surface-2: #242833;
+  --text: #e6e8ee;
+  --muted: #a0a7b5;
+  --faint: #6f7686;
+  --border: #2c303b;
+  --accent: #7aa2ff;
+  --accent-soft: rgba(122, 162, 255, 0.14);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font: 14px/1.45 var(--font);
+  min-height: 100vh;
+}
+a { color: inherit; text-decoration: none; }
+button { font: inherit; color: inherit; }
+[hidden] { display: none !important; }
+
+.wrap { max-width: 1280px; margin: 0 auto; padding: 32px 24px 48px; }
+
+/* Header: clock, search, theme toggle */
+.top { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; margin-bottom: 28px; }
+.clock { display: flex; flex-direction: column; min-width: 150px; }
+.clock-time { font-size: 40px; font-weight: 300; letter-spacing: -0.02em; line-height: 1; font-variant-numeric: tabular-nums; }
+.clock-date { color: var(--muted); font-size: 13px; margin-top: 6px; }
+.search {
+  flex: 1 1 320px;
+  display: flex; align-items: center; gap: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0 16px;
+  height: 44px;
+  box-shadow: var(--shadow);
+}
+.search:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.search svg { flex: none; color: var(--faint); }
+.search input {
+  flex: 1; min-width: 0;
+  border: 0; outline: 0; background: transparent;
+  color: var(--text); font: inherit; font-size: 15px;
+}
+.search input::placeholder { color: var(--faint); }
+.kbd {
+  font: 11px var(--mono); color: var(--faint);
+  border: 1px solid var(--border); border-radius: 5px; padding: 1px 6px;
+}
+.icon-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 36px; padding: 0 12px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 999px;
+  color: var(--muted); cursor: pointer; font-size: 12px;
+}
+.icon-btn:hover { color: var(--text); }
+
+/* Link icon: embedded favicon or letter avatar */
+.ico {
+  flex: none;
+  width: 20px; height: 20px; border-radius: 5px;
+  display: inline-grid; place-items: center;
+  font-size: 11px; font-weight: 600; color: #fff;
+  overflow: hidden;
+}
+.ico img { width: 100%; height: 100%; object-fit: contain; }
+.ico.letter { background: hsl(var(--hue, 220) 45% 48%); }
+
+/* Focus and top-match highlight shared by all layouts */
+.bm-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.bm-link.is-top { box-shadow: 0 0 0 2px var(--accent); }
+
+.tag {
+  display: inline-block; font-size: 11px; color: var(--muted);
+  background: var(--surface-2); border-radius: 4px; padding: 0 6px; margin-right: 4px;
+}
+mark { background: var(--accent-soft); color: inherit; border-radius: 2px; }
+
+.empty { color: var(--muted); padding: 24px 0; }
+
+.foot {
+  margin-top: 40px; display: flex; gap: 16px; flex-wrap: wrap;
+  color: var(--faint); font-size: 12px;
+}
+.foot a { color: var(--muted); text-decoration: underline; text-underline-offset: 2px; }
+.foot a[aria-current] { color: var(--accent); }
+
+@media (max-width: 640px) {
+  .wrap { padding: 20px 16px 32px; }
+  .clock-time { font-size: 32px; }
+}

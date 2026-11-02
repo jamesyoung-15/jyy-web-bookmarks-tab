@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>__TITLE__</title>
+<style>
+/*__CSS__*/
+/* Layout B: nightTab-style tiles */
+.top { justify-content: center; text-align: center; flex-direction: column; gap: 18px; margin-bottom: 36px; }
+.top .clock { align-items: center; }
+.top .clock-time { font-size: 64px; font-weight: 200; }
+.top .search { width: min(560px, 100%); flex: none; }
+.group { margin-bottom: 28px; }
+.group h2 {
+  margin: 0 0 10px; font-size: 12px; font-weight: 600; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--faint);
+}
+.tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(124px, 1fr)); gap: 12px; }
+.tile {
+  position: relative;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+  height: 112px; padding: 12px 10px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+  box-shadow: var(--shadow); text-align: center;
+  transition: transform 0.12s ease, border-color 0.12s ease;
+}
+.tile:hover, .tile:focus-visible { transform: translateY(-2px); border-color: var(--accent); }
+.tile::before {
+  content: ""; position: absolute; left: 0; right: 0; top: 0; height: 3px;
+  border-radius: 14px 14px 0 0; background: hsl(var(--hue, 220) 55% 55%); opacity: 0.8;
+}
+.tile-title {
+  font-size: 12.5px; font-weight: 500; line-height: 1.25;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.pop {
+  position: absolute; z-index: 10; left: 50%; top: calc(100% + 8px); transform: translateX(-50%);
+  width: 260px; padding: 10px 12px; text-align: left;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  font-size: 12px; color: var(--muted);
+  opacity: 0; visibility: hidden; transition: opacity 0.1s ease 0.25s;
+  pointer-events: none;
+}
+.pop b { display: block; color: var(--text); font-size: 13px; margin-bottom: 2px; }
+.pop .host { display: block; font-family: var(--mono); font-size: 11px; color: var(--faint); margin-top: 6px; word-break: break-all; }
+.pop .tags { margin-top: 6px; }
+.tile:hover .pop, .tile:focus-visible .pop { opacity: 1; visibility: visible; }
+.pinned .tile { height: 124px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header id="top"></header>
+  <main id="main"></main>
+  <p class="empty" id="empty" hidden>No matches.</p>
+  <footer id="foot"></footer>
+</div>
+<script>window.BOOKMARKS = /*__DATA__*/;</script>
+<script>
+/*__JS__*/
+</script>
+<script>
+(function () {
+  const { data, icon, esc, search } = BM;
+  const main = document.getElementById("main");
+  const empty = document.getElementById("empty");
+
+  function hue(s) {
+    let h = 0;
+    for (const c of s) h = (h * 31 + c.charCodeAt(0)) % 360;
+    return h;
+  }
+
+  function tile(link) {
+    const a = document.createElement("a");
+    a.className = "tile bm-link";
+    a.href = link.url;
+    a.dataset.id = link.id;
+    a.style.setProperty("--hue", hue(link.host || link.title));
+    const title = document.createElement("span");
+    title.className = "tile-title";
+    title.textContent = link.title;
+    const pop = document.createElement("span");
+    pop.className = "pop";
+    pop.innerHTML =
+      "<b>" + esc(link.title) + "</b>" +
+      (link.desc ? esc(link.desc) : "<i>No description yet.</i>") +
+      (link.tags.length ? '<span class="tags">' + link.tags.map((t) => '<span class="tag">' + esc(t) + "</span>").join("") + "</span>" : "") +
+      '<span class="host">' + esc(link.host) + "</span>";
+    a.append(icon(link, 36), title, pop);
+    return a;
+  }
+
+  function section(name, ids, extra) {
+    const s = document.createElement("section");
+    s.className = "group" + (extra ? " " + extra : "");
+    const h = document.createElement("h2");
+    h.textContent = name;
+    const grid = document.createElement("div");
+    grid.className = "tiles";
+    grid.append(...ids.map((id) => tile(data.links[id])));
+    s.append(h, grid);
+    return s;
+  }
+
+  function render(q) {
+    const hits = q ? search(q) : null;
+    const out = [];
+    if (hits) {
+      // Search shows one flat, ranked grid.
+      if (hits.length) out.push(section(hits.length + " match" + (hits.length === 1 ? "" : "es"), hits.map((h) => h.link.id)));
+    } else {
+      if (data.pinned.length) out.push(section(data.pinnedName || "pinned", data.pinned, "pinned"));
+      for (const g of data.groups) out.push(section(g.name, g.links));
+    }
+    main.replaceChildren(...out);
+    empty.hidden = out.length > 0;
+    return hits ? hits.map((h) => h.link.id) : null;
+  }
+
+  BM.init({ layout: "tiles", render });
+})();
+</script>
+</body>
+</html>

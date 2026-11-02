@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>__TITLE__</title>
+<style>
+/*__CSS__*/
+/* Layout A: grouped cards */
+.pinned { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+.chip {
+  display: inline-flex; align-items: center;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 999px;
+  box-shadow: var(--shadow);
+}
+.chip:hover, .chip:focus-within { border-color: var(--accent); }
+.chip.is-open { border-color: var(--accent); background: var(--accent-soft); }
+.chip-link { display: inline-flex; align-items: center; gap: 8px; padding: 6px 4px 6px 8px; font-weight: 500; border-radius: 999px; }
+.chip .info { margin-right: 4px; }
+.pinned-details { margin-bottom: 16px; }
+.pinned-details:empty { display: none; }
+.pinned-details .details {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  box-shadow: var(--shadow); margin: 8px 0 0; padding: 12px 14px;
+}
+
+/* Fixed columns filled by JS, so opening details never moves a card to another column. */
+.grid { display: flex; gap: 16px; align-items: flex-start; }
+.col { flex: 1 1 0; min-width: 0; }
+.card {
+  break-inside: avoid; margin-bottom: 16px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  box-shadow: var(--shadow); padding: 12px 8px 8px;
+}
+.card h2 {
+  margin: 0 8px 6px; font-size: 11px; font-weight: 600; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--faint);
+}
+.row { display: flex; align-items: flex-start; border-radius: 7px; }
+.row:hover, .row:focus-within, .row.is-open { background: var(--surface-2); }
+.row-link { flex: 1; min-width: 0; display: flex; gap: 10px; align-items: flex-start; padding: 7px 4px 7px 8px; border-radius: 7px; }
+.row-link .ico { margin-top: 1px; }
+.row-text { min-width: 0; flex: 1; }
+.row-title { display: block; font-weight: 500; }
+.row-desc { display: block; color: var(--muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.row-host { display: block; color: var(--faint); font-size: 11px; font-family: var(--mono); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Info toggle: faint until the row is hovered or focused, always shown when open */
+.info {
+  flex: none; display: inline-grid; place-items: center;
+  width: 26px; height: 26px; margin: 4px 4px 0 0; padding: 0;
+  border: 0; border-radius: 6px; background: transparent; color: var(--faint);
+  cursor: pointer; opacity: 0.35;
+}
+.row:hover .info, .chip:hover .info, .info:focus-visible, .is-open .info { opacity: 1; }
+.info:hover { color: var(--accent); background: var(--accent-soft); }
+.info:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.is-open .info { color: var(--accent); }
+.chip .info { width: 22px; height: 22px; margin-top: 0; }
+
+/* Expanded details */
+.details { margin: 0 8px 8px 38px; padding: 8px 0 2px; border-top: 1px solid var(--border); font-size: 12.5px; }
+.details-desc { color: var(--text); margin: 0 0 8px; white-space: pre-wrap; }
+.details-desc.missing { color: var(--faint); font-style: italic; }
+.details dl { display: grid; grid-template-columns: auto 1fr; gap: 3px 10px; margin: 0; }
+.details dt { color: var(--faint); }
+.details dd { margin: 0; color: var(--muted); min-width: 0; }
+.details .url { font-family: var(--mono); font-size: 11px; word-break: break-all; }
+.copy {
+  margin-left: 6px; padding: 0 6px; font-size: 11px; cursor: pointer;
+  border: 1px solid var(--border); border-radius: 4px; background: var(--surface); color: var(--muted);
+}
+.copy:hover { color: var(--text); }
+
+body.show-all .row .info { visibility: hidden; }
+body.show-all .row.is-open:not(:hover):not(:focus-within) { background: transparent; }
+body.show-all .details { border-top: 0; padding-top: 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header id="top"></header>
+  <nav class="pinned" id="pinned" aria-label="Pinned"></nav>
+  <div class="pinned-details" id="pinned-details"></div>
+  <main class="grid" id="grid"></main>
+  <p class="empty" id="empty" hidden>No matches.</p>
+  <footer id="foot"></footer>
+</div>
+<script>window.BOOKMARKS = /*__DATA__*/;</script>
+<script>
+/*__JS__*/
+</script>
+<script>
+(function () {
+  const { data, icon, esc, search, highlight } = BM;
+  const pinnedEl = document.getElementById("pinned");
+  const pinnedDetails = document.getElementById("pinned-details");
+  const grid = document.getElementById("grid");
+  const empty = document.getElementById("empty");
+  const SHOW_ALL_KEY = "bm-cards-show-all";
+
+  // Expanded rows survive re-renders while searching. Keys are "<group>|<id>".
+  const open = new Set();
+  let openPinned = null;
+  let showAll = false;
+  try { showAll = localStorage.getItem(SHOW_ALL_KEY) === "1"; } catch (e) {}
+
+  const INFO_SVG =
+    '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">' +
+    '<circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><circle cx="12" cy="7.8" r="0.6" fill="currentColor"/></svg>';
+
+  function fmtDate(secs) {
+    if (!secs) return "";
+    return new Date(secs * 1000).toLocaleDateString([], { year: "numeric", month: "short", day: "numeric" });
+  }
+
+  function details(link, q) {
+    const box = document.createElement("div");
+    box.className = "details";
+    box.id = "details-" + link.id + "-" + Math.random().toString(36).slice(2, 7);
+    const rows = [
+      ["URL", '<span class="url">' + esc(link.url) + '</span><button class="copy" type="button">Copy</button>'],
+      ["Folder", esc(link.groups.join(", "))],
+    ];
+    if (link.tags.length) rows.push(["Tags", link.tags.map((t) => '<span class="tag">' + highlight(t, q) + "</span>").join("")]);
+    if (link.alias) rows.push(["Aliases", highlight(link.alias, q)]);
+    if (link.added) rows.push(["Added", esc(fmtDate(link.added))]);
+    box.innerHTML =
+      (link.desc
+        ? '<p class="details-desc">' + highlight(link.desc, q) + "</p>"
+        : '<p class="details-desc missing">No description yet. Add one to notes.toml for this URL, then rebuild.</p>') +
+      "<dl>" + rows.map(([k, v]) => "<dt>" + k + "</dt><dd>" + v + "</dd>").join("") + "</dl>";
+    box.querySelector(".copy").addEventListener("click", (e) => copyText(link.url, e.currentTarget));
+    return box;
+  }
+
+  function copyText(text, btn) {
+    const done = () => { btn.textContent = "Copied"; setTimeout(() => (btn.textContent = "Copy"), 1200); };
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text).then(done, () => fallbackCopy(text, done));
+    } else {
+      fallbackCopy(text, done);
+    }
+  }
+  function fallbackCopy(text, done) {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.append(ta);
+    ta.select();
+    try { if (document.execCommand("copy")) done(); } catch (e) {}
+    ta.remove();
+  }
+
+  function infoButton(link, expanded, controls) {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "info";
+    b.innerHTML = INFO_SVG;
+    b.setAttribute("aria-label", "Details for " + link.title);
+    b.setAttribute("aria-expanded", String(expanded));
+    if (controls) b.setAttribute("aria-controls", controls);
+    b.title = expanded ? "Hide details" : "Show details";
+    return b;
+  }
+
+  function chip(link, q) {
+    const wrap = document.createElement("span");
+    const isOpen = openPinned === link.id;
+    wrap.className = "chip" + (isOpen ? " is-open" : "");
+    const a = document.createElement("a");
+    a.className = "chip-link bm-link";
+    a.href = link.url;
+    a.dataset.id = link.id;
+    a.title = link.desc || link.url;
+    a.append(icon(link, 18), link.title);
+    const b = infoButton(link, isOpen, "pinned-details");
+    b.addEventListener("click", () => {
+      openPinned = openPinned === link.id ? null : link.id;
+      rerender();
+      restoreFocus(".chip .info", link.id);
+    });
+    b.dataset.id = link.id;
+    wrap.append(a, b);
+    return wrap;
+  }
+
+  function row(link, group, q) {
+    const key = group + "|" + link.id;
+    const isOpen = showAll || open.has(key);
+    const wrap = document.createElement("div");
+    const r = document.createElement("div");
+    r.className = "row" + (isOpen ? " is-open" : "");
+
+    const a = document.createElement("a");
+    a.className = "row-link bm-link";
+    a.href = link.url;
+    a.dataset.id = link.id;
+    a.title = (link.desc ? link.desc + "\n" : "") + link.url;
+    const text = document.createElement("span");
+    text.className = "row-text";
+    text.innerHTML =
+      '<span class="row-title">' + highlight(link.title, q) + "</span>" +
+      (link.desc && !isOpen
+        ? '<span class="row-desc">' + highlight(link.desc, q) + "</span>"
+        : '<span class="row-host">' + esc(link.host) + "</span>");
+    a.append(icon(link), text);
+
+    const panel = isOpen ? details(link, q) : null;
+    const b = infoButton(link, isOpen, panel && panel.id);
+    b.dataset.id = link.id;
+    b.dataset.key = key;
+    b.addEventListener("click", () => {
+      open.has(key) ? open.delete(key) : open.add(key);
+      rerender();
+      restoreFocus('.row .info[data-key="' + CSS.escape(key) + '"]');
+    });
+    r.append(a, b);
+    wrap.append(r);
+    if (panel) wrap.append(panel);
+    return wrap;
+  }
+
+  // Re-render through the search box so the shared code keeps the top-match state.
+  function rerender() {
+    document.getElementById("q").dispatchEvent(new Event("input"));
+  }
+
+  function restoreFocus(selector, id) {
+    const sel = id ? selector + '[data-id="' + id + '"]' : selector;
+    const el = document.querySelector(sel);
+    if (el) el.focus();
+  }
+
+  function render(q) {
+    const hits = q ? search(q) : null;
+    const allowed = hits ? new Set(hits.map((h) => h.link.id)) : null;
+
+    const pinned = allowed ? data.pinned.filter((id) => allowed.has(id)) : data.pinned;
+    if (openPinned && !pinned.includes(openPinned)) openPinned = null;
+    pinnedEl.replaceChildren(...pinned.map((id) => chip(data.links[id], q)));
+    pinnedEl.hidden = !pinned.length;
+    pinnedDetails.replaceChildren(...(openPinned ? [details(data.links[openPinned], q)] : []));
+    pinnedDetails.style.marginBottom = pinned.length ? "" : "0";
+
+    const cards = [];
+    const weights = [];
+    for (const g of data.groups) {
+      const ids = allowed ? g.links.filter((id) => allowed.has(id)) : g.links;
+      if (!ids.length) continue;
+      const card = document.createElement("section");
+      card.className = "card";
+      const h = document.createElement("h2");
+      h.textContent = g.name;
+      card.append(h, ...ids.map((id) => row(data.links[id], g.name, q)));
+      cards.push(card);
+      weights.push(ids.length + 1); // +1 for the heading
+    }
+    grid.replaceChildren(...layoutColumns(cards, weights));
+    empty.hidden = cards.length > 0 || pinned.length > 0;
+    return hits ? hits.map((h) => h.link.id) : null;
+  }
+
+  // Assign cards to columns by link count, not measured height, so the
+  // assignment only changes when the column count or search results change.
+  const COL_MIN = 300;
+  const GAP = 16;
+  function columnCount() {
+    return Math.max(1, Math.floor((grid.clientWidth + GAP) / (COL_MIN + GAP)));
+  }
+  function layoutColumns(cards, weights) {
+    const n = columnCount();
+    const cols = Array.from({ length: n }, () => {
+      const c = document.createElement("div");
+      c.className = "col";
+      return c;
+    });
+    const load = new Array(n).fill(0);
+    cards.forEach((card, i) => {
+      const k = load.indexOf(Math.min(...load));
+      cols[k].append(card);
+      load[k] += weights[i];
+    });
+    return cols;
+  }
+  let lastCols = 0;
+  window.addEventListener("resize", () => {
+    const n = columnCount();
+    if (n !== lastCols) { lastCols = n; rerender(); }
+  });
+
+  BM.init({ layout: "cards", render });
+  lastCols = columnCount();
+
+  // Header toggle: show every row's details at once.
+  const toggle = document.createElement("button");
+  toggle.className = "icon-btn";
+  toggle.type = "button";
+  const label = () => (toggle.textContent = "Details: " + (showAll ? "all" : "on click"));
+  label();
+  document.body.classList.toggle("show-all", showAll);
+  toggle.addEventListener("click", () => {
+    showAll = !showAll;
+    try { localStorage.setItem(SHOW_ALL_KEY, showAll ? "1" : "0"); } catch (e) {}
+    document.body.classList.toggle("show-all", showAll);
+    label();
+    rerender();
+  });
+  document.getElementById("theme-btn").before(toggle);
+})();
+</script>
+</body>
+</html>
