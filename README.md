@@ -4,6 +4,8 @@ Turns a Chrome bookmarks export into a static, offline start page (in the style 
 
 ![Preview](./assets/20261102_Screenshot_033936.png)
 
+AI-Usage: Vibe-coded
+
 ## Install
 
 Needs [uv](https://docs.astral.sh/uv/). It installs Python 3.11+ if missing.
