@@ -4,7 +4,7 @@
 
 nightTab is blocked on the work laptop, and the user wants a static start page built from Chrome's bookmark export, set as Chrome's homepage or startup page through a `file:///` URL. Chrome stays the source of truth: edit there, re-export, rebuild. The user wants several layouts to compare, and a way to attach longer descriptions to links, because the collection will grow.
 
-Current export (`references/bookmarks_9_9_26.html`): Bookmarks Bar with 8 flat folders and 22 links. 17 links carry base64 favicons (`ICON=`). `essentials` duplicates links from other folders. Most hosts are internal (`*.ent.corp`, `*.amfam.com`), so the page must not call external favicon services.
+Current export (`references/bookmarks_9_9_26.html`): Bookmarks Bar with 8 flat folders and 22 links. 17 links carry base64 favicons (`ICON=`). `essentials` duplicates links from other folders. Most hosts are internal corporate hosts, so the page must not call external favicon services.
 
 ## Approach
 
@@ -40,10 +40,10 @@ Chrome bookmarks have no description field, so extra info lives beside the expor
 pinned = "essentials"          # folder shown as a top pinned row, not a normal group
 
 [[link]]
-url  = "https://console-openshift-console.apps.dall-oc-001-prd.ent.corp/..."
-desc = "Prod OpenShift console, Dallas. Use for app deploy status and pod logs."
-tags = ["k8s", "prod", "dallas"]
-alias = "ocp dal"              # extra search terms
+url  = "https://console.k8s-east.example.com/"
+desc = "Prod Kubernetes console, us-east. Use for app deploy status and pod logs."
+tags = ["k8s", "prod", "east"]
+alias = "k8s east"             # extra search terms
 ```
 
 - Duplicate URLs, such as one link in both `essentials` and `vsphere`, share a single entry.
