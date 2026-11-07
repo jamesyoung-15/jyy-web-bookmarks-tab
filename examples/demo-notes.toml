@@ -1,0 +1,41 @@
+# Fake notes for screenshots and demos. Pairs with demo-bookmarks.html.
+
+[settings]
+title = "Bookmarks"
+pinned = "essentials"
+hide_pinned_group = true
+group_order = ["monitoring", "deploy", "kubernetes"]
+
+[[link]]
+url = "https://grafana.example.com/"
+desc = "Service dashboards and SLO burn rates."
+tags = ["metrics", "slo"]
+alias = "dash"
+
+[[link]]
+url = "https://argocd.example.com/"
+desc = "GitOps sync status for every cluster."
+tags = ["gitops", "deploy"]
+alias = "argo"
+
+[[link]]
+url = "https://acme.pagerduty.com/"
+desc = "Who is on call and open incidents."
+tags = ["oncall", "incidents"]
+alias = "pd"
+
+[[link]]
+url = "https://vault.example.com/ui/"
+desc = "Secrets and dynamic database credentials."
+tags = ["secrets"]
+
+[[link]]
+url = "https://logs.example.com/app/discover"
+desc = "Application logs, 14 day retention."
+tags = ["logs"]
+alias = "elk"
+
+[[link]]
+url = "https://console.k8s-east.example.com/"
+desc = "Production cluster, us-east."
+tags = ["k8s", "prod"]
