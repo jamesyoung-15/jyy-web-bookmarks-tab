@@ -2,7 +2,7 @@
 
 Turns a Chrome bookmarks export into a static, offline start page (in the style of nightTab) for use as the Chrome homepage on a locked-down work laptop.
 
-![Preview](./assets/20261102_Screenshot_033936.png)
+![Preview](./assets/preview-cards.png)
 
 AI-Usage: Vibe-coded
 
@@ -42,10 +42,10 @@ Chrome has no description field, so extra info lives in `notes.toml`, matched to
 
 ```toml
 [[link]]
-url = "https://gridmgr.amfam.com/ui/"
-desc = "DNS and IPAM grid manager for NHQ."
-tags = ["dns", "ipam"]
-alias = "ib"
+url = "https://grafana.example.com/"
+desc = "Service dashboards and SLO burn rates."
+tags = ["metrics", "slo"]
+alias = "dash"
 ```
 
 - `uv run bookmarks-page --init-notes` appends empty entries for links that do not have one yet. It never edits or removes existing entries.
@@ -89,6 +89,15 @@ The **Details** button in the header switches between "on click" and "all" (ever
 Each page footer links to the other two. Layouts live in `src/bookmarks_page/templates/`, with shared code in `_shared.css` and `_shared.js`.
 
 ## Development
+
+The README screenshot uses fake data in `examples/`, so it shows no real hostnames:
+
+```sh
+uv run bookmarks-page examples/demo-bookmarks.html --notes examples/demo-notes.toml --out /tmp/demo
+chromium --headless --force-dark-mode --hide-scrollbars --window-size=1348,752 \
+  --screenshot=assets/preview-cards.png file:///tmp/demo/cards.html
+```
+
 
 ```sh
 uv run ruff format .
